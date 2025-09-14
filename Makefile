@@ -14,6 +14,8 @@
 #   Date: 2025-09-14
 #   Version: 1.0.0
 #   License: MIT
+
+# CHANGE THE PROJECT NAME AND VERSION AS NEEDED.
 PROJECT = pilot
 PROJECT_VERSION = 0.1.0
 CC = gcc
