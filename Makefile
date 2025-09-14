@@ -19,6 +19,7 @@
 PROJECT = pilot
 PROJECT_VERSION = 0.1.0
 CC = gcc
+LD = gcc
 INCLUDE_DIR = include
 SRC_DIR = src
 OBJ_DIR = dist
@@ -29,6 +30,9 @@ CFLAGS = -Wall -Wextra -g -pedantic -std=c11 -I./$(INCLUDE_DIR)
 # passing the version of the project as a preprocessor macro definition.
 CFLAGS += -DPROJECT_VERSION=\"$(PROJECT_VERSION)\"
 
+# Linker flags can be added here if needed.
+LDFLAGS =
+
 SRCS := $(wildcard $(SRC_DIR)/*.c)
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 
@@ -37,14 +41,15 @@ DEPFLAGS = -MMD -MP -MF $(DEP_DIR)/$*.d
 
 TARGET = $(OBJ_DIR)/$(PROJECT)
 
-.PHONY: all clean vars
+.PHONY: all clean vars bear
 
 
 all: $(OBJ_DIR) $(TARGET)
 	@echo "Build complete. Executable is $(TARGET)"
 
+# Linking step, so Linker and Linker flags are used here.
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^
+	$(LD) $(LDFLAGS) -o $@ $^
 
 # This should be individual file pattern then only $< will work.
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) $(DEP_DIR)
@@ -57,6 +62,7 @@ $(OBJ_DIR) $(DEP_DIR):
 $(DEP_DIR)/%.d:
 	
 
+# This shouls set up correct dependency between .o and .h files.
 include $(DEPS)
 
 
@@ -73,10 +79,12 @@ vars:
 	@echo "MAKE TOOL: $(MAKE)"
 	@echo "Project: $(PROJECT)"
 	@echo "Compiler: $(CC)"
-	@echo "Path to compile_command.json: $(CC_J)"
+	@echo "Linker: $(LD)"
 	@echo "Compiler Flags: $(CFLAGS)"
+	@echo "Linker Flags: $(LDFLAGS)"
 	@echo "Source Directory: $(SRC_DIR)"
 	@echo "Object Directory: $(OBJ_DIR)"
 	@echo "Source Files: $(SRCS)"
 	@echo "Object Files: $(OBJS)"
+	@echo "Dependency Files: $(DEPS)"
 	@echo "Target Executable: $(TARGET)"
