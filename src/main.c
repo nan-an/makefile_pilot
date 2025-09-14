@@ -2,6 +2,7 @@
 #include <xx/str.h>
 
 int main(void){
+  printf("Library Version: %s\n", get_version());
   Str *myStr = str_new("Hello, World!", 13);
   if (myStr) {
     printf("String: %s\n", str_cstr(myStr));

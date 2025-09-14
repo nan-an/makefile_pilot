@@ -31,3 +31,11 @@ void str_free(Str *str) {
 }
 size_t str_len(const Str *str) { return str ? str->length : 0; }
 const char *str_cstr(const Str *str) { return str ? str->data : NULL; }
+
+const char* get_version() {
+    #ifdef PROJECT_VERSION
+        return PROJECT_VERSION;
+    #else
+        return "unknown - (Compiled without version specification)";
+    #endif
+}

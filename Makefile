@@ -15,14 +15,21 @@
 #   Version: 1.0.0
 #   License: MIT
 PROJECT = pilot
+PROJECT_VERSION = 0.1.0
 CC = gcc
-CFLAGS = -Wall -Wextra -g -pedantic -std=c11 -I./include
+INCLUDE_DIR = include
 SRC_DIR = src
 OBJ_DIR = dist
+DEP_DIR = .dep
+
+CFLAGS = -Wall -Wextra -g -pedantic -std=c11 -I./$(INCLUDE_DIR)
+
+# passing the version of the project as a preprocessor macro definition.
+CFLAGS += -DPROJECT_VERSION=\"$(PROJECT_VERSION)\"
+
 SRCS := $(wildcard $(SRC_DIR)/*.c)
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 
-DEP_DIR = .dep
 DEPS := $(patsubst $(SRC_DIR)/%.c,$(DEP_DIR)/%.d,$(SRCS))
 DEPFLAGS = -MMD -MP -MF $(DEP_DIR)/$*.d
 
