@@ -25,6 +25,11 @@ SRC_DIR = src
 OBJ_DIR = dist
 DEP_DIR = .dep
 
+TEST_DIR = tests
+TEST_SRC_DIR = $(TEST_DIR)/src
+TEST_OBJ_DIR = $(TEST_DIR)/dist
+TEST_DEP_DIR = $(TEST_DIR)/.dep
+
 CFLAGS = -Wall -Wextra -g -pedantic -std=c11 -I./$(INCLUDE_DIR)
 
 # passing the version of the project as a preprocessor macro definition.
@@ -33,23 +38,48 @@ CFLAGS += -DPROJECT_VERSION=\"$(PROJECT_VERSION)\"
 # Linker flags can be added here if needed.
 LDFLAGS =
 
+
+MAIN_FILE := $(SRC_DIR)/main.c
+MAIN_OBJ := $(OBJ_DIR)/main.o
+
+
 SRCS := $(wildcard $(SRC_DIR)/*.c)
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
+LIB_SRCS := $(filter-out $(MAIN_FILE),$(SRCS))
+LIB_OBJS := $(filter-out $(MAIN_OBJ),$(OBJS))
 
 DEPS := $(patsubst $(SRC_DIR)/%.c,$(DEP_DIR)/%.d,$(SRCS))
 DEPFLAGS = -MMD -MP -MF $(DEP_DIR)/$*.d
 
 TARGET = $(OBJ_DIR)/$(PROJECT)
+LIB_TARGET = $(OBJ_DIR)/lib$(PROJECT).a
+LIB_SHARED_TARGET = $(OBJ_DIR)/lib$(PROJECT).so
+
+
+TEST_SRCS := $(wildcard $(TEST_SRC_DIR)/*.c)
+TEST_OBJS := $(patsubst $(TEST_SRC_DIR)/%.c,$(TEST_OBJ_DIR)/%.o,$(TEST_SRCS))
+TEST_DEPS := $(patsubst $(TEST_SRC_DIR)/%.c,$(TEST_DEP_DIR)/%.d,$(TEST_SRCS))
+TEST_TARGETS = $(patsubst $(TEST_SRC_DIR)/%.c,$(TEST_OBJ_DIR)/%_tests,$(TEST_SRCS))
+TEST_CFLAGS = $(CFLAGS) -I./$(TEST_DIR)/include -DTEST
+TEST_DEPFLAGS = -MMD -MP -MF $(TEST_DEP_DIR)/$*.d
+TEST_LDFLAGS = -L./$(OBJ_DIR) -l$(PROJECT)
 
 .PHONY: all clean vars bear
 
 
-all: $(OBJ_DIR) $(TARGET)
+all: $(OBJ_DIR) $(TARGET) $(LIB_TARGET) $(LIB_SHARED_TARGET)
 	@echo "Build complete. Executable is $(TARGET)"
 
 # Linking step, so Linker and Linker flags are used here.
 $(TARGET): $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $^
+
+$(LIB_TARGET): $(LIB_OBJS)
+	ar rcs $@ $^
+
+$(LIB_SHARED_TARGET): $(LIB_OBJS)
+	$(CC) -fPIC -shared -o $@ $^
+
 
 # This should be individual file pattern then only $< will work.
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) $(DEP_DIR)
@@ -65,13 +95,35 @@ $(DEP_DIR)/%.d:
 # This shouls set up correct dependency between .o and .h files.
 include $(DEPS)
 
+# Test targets
+tests: $(TEST_OBJS) $(TEST_TARGETS)
+	@echo "All tests built."
+	@for test in $(TEST_TARGETS); do \
+		echo "Running $$test..."; \
+		./$$test; \
+	done
+
+$(TEST_OBJ_DIR) $(TEST_DEP_DIR):
+	mkdir -p $@
+
+$(TEST_OBJ_DIR)/%_tests: $(TEST_OBJ_DIR)/%.o $(LIB_TARGET)
+	$(LD) $(TEST_LDFLAGS) -o $@ $< $(LIB_TARGET)
+
+$(TEST_OBJ_DIR)/%.o: $(TEST_SRC_DIR)/%.c | $(TEST_OBJ_DIR) $(TEST_DEP_DIR)
+	$(CC) -c $(TEST_CFLAGS) $(TEST_DEPFLAGS) -o $@ $<
+
+$(TEST_DEP_DIR)/%.d:
+	# Dependency files for test sources will be generated here.
+
+include $(TEST_DEPS)
 
 clean:
-	rm -rf $(OBJ_DIR) $(DEP_DIR) $(TARGET)
+	rm -rf $(OBJ_DIR) $(DEP_DIR) $(TARGET) $(LIB_TARGET) $(LIB_SHARED_TARGET) $(TEST_OBJ_DIR) $(TEST_DEP_DIR) $(TEST_TARGETS)
+	@echo "Cleaned up build artifacts."
 
 bear: clean
 	@echo "Generating compile_commands.json using bear..."
-	bear -- $(MAKE) all
+	bear -- $(MAKE) all tests
 
 vars:
 	@echo "Build Variables:"
@@ -88,3 +140,14 @@ vars:
 	@echo "Object Files: $(OBJS)"
 	@echo "Dependency Files: $(DEPS)"
 	@echo "Target Executable: $(TARGET)"
+	@echo "Library Target: $(LIB_TARGET)"
+	@echo "Shared Library Target: $(LIB_SHARED_TARGET)"
+	@echo "Test Source Directory: $(TEST_SRC_DIR)"
+	@echo "Test Object Directory: $(TEST_OBJ_DIR)"
+	@echo "Test Source Files: $(TEST_SRCS)"
+	@echo "Test Object Files: $(TEST_OBJS)"
+	@echo "Test Dependency Files: $(TEST_DEPS)"
+	@echo "Test Targets: $(TEST_TARGETS)"
+	@echo "Test Compiler Flags: $(TEST_CFLAGS)"
+	@echo "Test Linker Flags: $(TEST_LDFLAGS)"
+	@echo "================"
