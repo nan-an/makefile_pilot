@@ -20,6 +20,8 @@ PROJECT = pilot
 PROJECT_VERSION = 0.1.0
 CC = gcc
 LD = gcc
+MC = /usr/bin/valgrind
+MACMC = /usr/bin/leaks
 INCLUDE_DIR = include
 SRC_DIR = src
 OBJ_DIR = dist
@@ -64,7 +66,7 @@ TEST_CFLAGS = $(CFLAGS) -I./$(TEST_DIR)/include -DTEST
 TEST_DEPFLAGS = -MMD -MP -MF $(TEST_DEP_DIR)/$*.d
 TEST_LDFLAGS =
 
-.PHONY: all clean vars bear
+.PHONY: all clean vars bear mc macmc
 
 
 all: $(OBJ_DIR) $(TARGET) $(LIB_TARGET) $(LIB_SHARED_TARGET)
@@ -94,6 +96,21 @@ $(DEP_DIR)/%.d:
 
 # This shouls set up correct dependency between .o and .h files.
 include $(DEPS)
+
+mc: $(TEST_OBJS) $(TEST_TARGETS)
+	@echo "All tests built."
+	@for test in $(TEST_TARGETS); do \
+		echo "Running memory check on $$test..."; \
+		$(MC) --tool=memcheck --gen-suppressions=all --leak-check=full --leak-resolution=med --track-origins=yes --vgdb=no ./$$test;	 \
+	done
+
+# Mac OS specific memory check using Leaks tool.
+macmc: $(TEST_OBJS) $(TEST_TARGETS)
+	@echo "All tests built."
+	@for test in $(TEST_TARGETS); do \
+		echo "Running memory check with Mac OS Leaks on $$test..."; \
+		$(MACMC) --atExit --list -- ./$$test;	 \
+	done
 
 # Test targets
 tests: $(TEST_OBJS) $(TEST_TARGETS)
