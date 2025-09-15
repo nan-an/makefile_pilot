@@ -62,7 +62,7 @@ TEST_DEPS := $(patsubst $(TEST_SRC_DIR)/%.c,$(TEST_DEP_DIR)/%.d,$(TEST_SRCS))
 TEST_TARGETS = $(patsubst $(TEST_SRC_DIR)/%.c,$(TEST_OBJ_DIR)/%_tests,$(TEST_SRCS))
 TEST_CFLAGS = $(CFLAGS) -I./$(TEST_DIR)/include -DTEST
 TEST_DEPFLAGS = -MMD -MP -MF $(TEST_DEP_DIR)/$*.d
-TEST_LDFLAGS = -L./$(OBJ_DIR) -l$(PROJECT)
+TEST_LDFLAGS =
 
 .PHONY: all clean vars bear
 
