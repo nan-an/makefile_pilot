@@ -18,6 +18,8 @@
 # CHANGE THE PROJECT NAME AND VERSION AS NEEDED.
 PROJECT = pilot
 PROJECT_VERSION = 0.1.0
+# CC = clang-19
+# LD = clang-19
 CC = gcc
 LD = gcc
 MC = /usr/bin/valgrind
@@ -32,13 +34,16 @@ TEST_SRC_DIR = $(TEST_DIR)/src
 TEST_OBJ_DIR = $(TEST_DIR)/dist
 TEST_DEP_DIR = $(TEST_DIR)/.dep
 
-CFLAGS = -Wall -Wextra -g -pedantic -std=c11 -I./$(INCLUDE_DIR)
+CFLAGS = -Wall -Wextra -g -fPIC -pedantic -pthread -std=c11 -I./$(INCLUDE_DIR)
 
 # passing the version of the project as a preprocessor macro definition.
 CFLAGS += -DPROJECT_VERSION=\"$(PROJECT_VERSION)\"
 
 # Linker flags can be added here if needed.
-LDFLAGS =
+LDFLAGS = -lpthread
+
+# Include external dependencies if any.
+include depends.mk
 
 
 MAIN_FILE := $(SRC_DIR)/main.c
@@ -73,14 +78,14 @@ all: $(OBJ_DIR) $(TARGET) $(LIB_TARGET) $(LIB_SHARED_TARGET)
 	@echo "Build complete. Executable is $(TARGET)"
 
 # Linking step, so Linker and Linker flags are used here.
-$(TARGET): $(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $^
+$(TARGET): $(SRCS)
+	$(LD) $(CFLAGS) $(SRCS) -o $@ $(LDFLAGS)
 
 $(LIB_TARGET): $(LIB_OBJS)
 	ar rcs $@ $^
 
 $(LIB_SHARED_TARGET): $(LIB_OBJS)
-	$(CC) -fPIC -shared -o $@ $^
+	$(CC) -shared -o $@ $^
 
 
 # This should be individual file pattern then only $< will work.
