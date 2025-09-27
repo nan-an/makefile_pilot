@@ -3,6 +3,10 @@
 # Header files are to be in "include" directory
 # Object files will be placed in "dist" directory
 # The final executable will be named as Project name
+# Another dynamically linked executable will be named as "Project name"-shared
+# dynamically linked  library will be named as lib"Project name".so
+# statically linked  library will be named as lib"Project name".a
+# libraries will not include the `main.c` which contains the entry main function.
 # Usage:
 #   make        - to build the project
 #   make clean  - to remove object files and executable
@@ -34,7 +38,7 @@ TEST_SRC_DIR = $(TEST_DIR)/src
 TEST_OBJ_DIR = $(TEST_DIR)/dist
 TEST_DEP_DIR = $(TEST_DIR)/.dep
 
-CFLAGS = -Wall -Wextra -g -fPIC -pedantic -pthread -std=c11 -I./$(INCLUDE_DIR)
+CFLAGS = -Wall -Wextra -g -pedantic -pthread -std=c11 -I./$(INCLUDE_DIR)
 
 # passing the version of the project as a preprocessor macro definition.
 CFLAGS += -DPROJECT_VERSION=\"$(PROJECT_VERSION)\"
@@ -59,6 +63,7 @@ DEPS := $(patsubst $(SRC_DIR)/%.c,$(DEP_DIR)/%.d,$(SRCS))
 DEPFLAGS = -MMD -MP -MF $(DEP_DIR)/$*.d
 
 TARGET = $(OBJ_DIR)/$(PROJECT)
+SHARED_TARGET = $(OBJ_DIR)/$(PROJECT)-shared
 LIB_TARGET = $(OBJ_DIR)/lib$(PROJECT).a
 LIB_SHARED_TARGET = $(OBJ_DIR)/lib$(PROJECT).so
 
@@ -74,18 +79,21 @@ TEST_LDFLAGS =
 .PHONY: all clean vars bear mc macmc
 
 
-all: $(OBJ_DIR) $(TARGET) $(LIB_TARGET) $(LIB_SHARED_TARGET)
+all: $(OBJ_DIR) $(TARGET) $(SHARED_TARGET) $(LIB_TARGET) $(LIB_SHARED_TARGET)
 	@echo "Build complete. Executable is $(TARGET)"
 
 # Linking step, so Linker and Linker flags are used here.
-$(TARGET): $(SRCS)
-	$(LD) $(CFLAGS) $(SRCS) -o $@ $(LDFLAGS)
+$(TARGET): $(LIB_TARGET)
+	$(LD) -o $@ $(CFLAGS) $(LDFLAGS) $(MAIN_FILE) $(LIB_TARGET)
+
+$(SHARED_TARGET): $(LIB_SHARED_TARGET)
+	$(LD) -o $@ $(CFLAGS) $(LDFLAGS) $(MAIN_FILE) -L./$(OBJ_DIR) -l$(PROJECT)
 
 $(LIB_TARGET): $(LIB_OBJS)
 	ar rcs $@ $^
 
-$(LIB_SHARED_TARGET): $(LIB_OBJS)
-	$(CC) -shared -o $@ $^
+$(LIB_SHARED_TARGET): $(LIB_SRCS)
+	$(CC) $(CFLAGS) -shared -fPIC -o $@ $^
 
 
 # This should be individual file pattern then only $< will work.
